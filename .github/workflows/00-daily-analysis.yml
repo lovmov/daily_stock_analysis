@@ -298,6 +298,8 @@ jobs:
           # ==========================================
           # 数据源
           # ==========================================
+          # 同花顺 Fuyao 数据源（国内行情，GitHub Runner 访问需注意网络）
+          FUYAO_API_KEY: ${{ secrets.FUYAO_API_KEY }}
           TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
           # Tushare Pro 自定义接入地址（可选；指向自建网关或第三方兼容镜像时设置）
           TUSHARE_HTTP_URL: ${{ vars.TUSHARE_HTTP_URL || secrets.TUSHARE_HTTP_URL }}
