@@ -263,7 +263,7 @@ def foreign_stock_english_aliases(stock_code: str, stock_name: str) -> Tuple[str
     return tuple(aliases) if aliases else ()
 
 
-_CONTAINS_CJK_RE = re.compile(r"[\u4e00-\u9fff]")
+_CONTAINS_CJK_RE = re.compile(r"[一-鿿]")
 
 
 def is_meaningful_stock_name(name: str | None, stock_code: str) -> bool:
@@ -296,3 +296,43 @@ def is_meaningful_stock_name(name: str | None, stock_code: str) -> bool:
         return False
 
     return True
+
+
+
+def lookup_static_stock_name(
+    stock_code: str,
+    stock_name_map: Dict[str, str] | None = None,
+) -> str | None:
+    """Look up a stock name in ``STOCK_NAME_MAP`` across raw and foreign-canonical keys."""
+    mapping = STOCK_NAME_MAP if stock_name_map is None else stock_name_map
+    raw = (stock_code or "").strip()
+    if not raw:
+        return None
+
+    upper = raw.upper()
+    candidates: list[str] = [raw]
+    if upper != raw:
+        candidates.append(upper)
+
+    canonical = canonicalize_foreign_stock_code(upper)
+    if canonical and canonical not in candidates:
+        candidates.append(canonical)
+
+    # Normalize HK forms (HK700, HK00700, 700.HK, 0700.HK, bare 4-digit 0700) to 5-digit keys
+    hk_digits = ""
+    if upper.startswith("HK") and not upper.startswith("HK.") and upper[2:].isdigit() and 1 <= len(upper[2:]) <= 5:
+        hk_digits = upper[2:]
+    elif upper.endswith(".HK") and upper[:-3].isdigit() and 1 <= len(upper[:-3]) <= 5:
+        hk_digits = upper[:-3]
+    elif upper.isdigit() and len(upper) == 4:
+        hk_digits = upper
+    if hk_digits:
+        padded = hk_digits.zfill(5)
+        if padded not in candidates:
+            candidates.append(padded)
+
+    for key in candidates:
+        name = mapping.get(key)
+        if is_meaningful_stock_name(name, raw) and is_meaningful_stock_name(name, key):
+            return str(name).strip()
+    return None
